@@ -1,4 +1,4 @@
-package cmd
+package configs
 
 const (
 	BASE_URL        = "http://dspace.amritanet.edu:8080"

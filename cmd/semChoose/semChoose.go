@@ -1,20 +1,33 @@
-package cmd
+package semChoose
 
 import (
 	"fmt"
 	"os"
 	"time"
 
+	"amrita_pyq/cmd/configs"
+	"amrita_pyq/cmd/helpers"
+	"amrita_pyq/cmd/interfaces"
+	"amrita_pyq/cmd/requestClient"
+	"amrita_pyq/cmd/stack"
+
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 )
+
+// Interface to access functions from root package
+var inter interfaces.Interface
+
+func Init(n interfaces.Interface) {
+	inter = n
+}
 
 type Assessment struct {
 	name string
 	path string
 }
 
-func semChoose(url string) {
+func SemChoose(url string) {
 	action := func() {
 		time.Sleep(2 * time.Second)
 	}
@@ -24,9 +37,9 @@ func semChoose(url string) {
 	}
 	params_url := url
 
-	assessments, err := semChooseReq(url)
+	assessments, err := requestClient.SemChooseReq(url)
 	if err != nil {
-		fmt.Println(errorStyle.Render(fmt.Sprintf("Error: %v\n", err)))
+		fmt.Println(helpers.ErrorStyle.Render(fmt.Sprintf("Error: %v\n", err)))
 		return
 	}
 
@@ -36,7 +49,7 @@ func semChoose(url string) {
 
 	// Convert assessments to huh options.
 	for _, assessment := range assessments {
-		assess := Assessment(assessment)
+		assess := Assessment{assessment.Name, assessment.Path}
 		assessList = append(assessList, assess)
 		options = append(options, huh.NewOption(assess.name, assess.name))
 	}
@@ -61,18 +74,18 @@ func semChoose(url string) {
 
 	// Handle selection.
 	if selectedOption == "Back" {
-		semTable(stack.Pop())
+		inter.UseSemTable(stack.STACK.Pop())
 		return
 	}
 
 	// Find selected assessment and process it.
 	for _, assess := range assessList {
 		if assess.name == selectedOption {
-			url := BASE_URL + assess.path
-			year(url)
+			url := configs.BASE_URL + assess.path
+			inter.UseYear(url)
 			break
 		}
 	}
 
-	stack.Push(params_url)
+	stack.STACK.Push(params_url)
 }

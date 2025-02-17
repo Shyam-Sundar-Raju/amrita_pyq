@@ -1,20 +1,33 @@
-package cmd
+package semTable
 
 import (
 	"fmt"
 	"os"
 	"time"
 
+	"amrita_pyq/cmd/configs"
+	"amrita_pyq/cmd/helpers"
+	"amrita_pyq/cmd/interfaces"
+	"amrita_pyq/cmd/requestClient"
+	"amrita_pyq/cmd/stack"
+
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 )
+
+// Interface to access functions from root package
+var inter interfaces.Interface
+
+func Init(n interfaces.Interface) {
+	inter = n
+}
 
 type Semester struct {
 	name string
 	path string
 }
 
-func semTable(url string) {
+func SemTable(url string) {
 	action := func() {
 		time.Sleep(2 * time.Second)
 	}
@@ -23,9 +36,9 @@ func semTable(url string) {
 		os.Exit(1)
 	}
 
-	semesters, err := semTableReq(url)
+	semesters, err := requestClient.SemTableReq(url)
 	if err != nil {
-		fmt.Print(errorStyle.Render(fmt.Sprintf("Error: %v\n", err)))
+		fmt.Print(helpers.ErrorStyle.Render(fmt.Sprintf("Error: %v\n", err)))
 		return
 	}
 
@@ -35,7 +48,7 @@ func semTable(url string) {
 
 	// Convert semesters to huh options.
 	for _, sem := range semesters {
-		semester := Semester(sem)
+		semester := Semester{sem.Name, sem.Path}
 		sems = append(sems, semester)
 		options = append(options, huh.NewOption(semester.name, semester.name))
 	}
@@ -52,7 +65,7 @@ func semTable(url string) {
 		),
 	)
 
-	stack.Push(url) // Save current URL to stack.
+	stack.STACK.Push(url) // Save current URL to stack.
 
 	err = form.Run()
 	if err != nil {
@@ -62,15 +75,15 @@ func semTable(url string) {
 
 	// Handle selection.
 	if selectedOption == "Back" {
-		huhMenuStart() // Go back to main menu.
+		inter.UseHuhMenuStart() // Go back to main menu.
 		return
 	}
 
 	// Find selected semester and process it.
 	for _, sem := range sems {
 		if sem.name == selectedOption {
-			url := BASE_URL + sem.path
-			semChoose(url)
+			url := configs.BASE_URL + sem.path
+			inter.UseSemChoose(url)
 			break
 		}
 	}
